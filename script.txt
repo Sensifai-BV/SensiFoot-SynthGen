@@ -1,0 +1,38 @@
+blender --background --python retarget_fbx.py -- \
+--source /home/parsa/Documents/Bahari/Foot_Gestures/AI-Mohyedi/deepmotion/seriese2/parsa/G6_compressed_customModel_hXBrhdpmbtpo6dwf3zVGyw/G6-includeTPose.fbx \
+--target /home/parsa/Documents/Bahari/Foot_Gestures/AI-Mohyedi/deepmotion/blender-output/series2/g8-parsa-worker/worker.fbx \
+--output ./output_test.fbx
+
+
+
+
+
+./blender --background --python retarget_script/retarget.py -- --source  /home/parsa/Documents/Bahari/Foot_Gestures/AI-Mohyedi/deepmotion/seriese2/parsa/G6_compressed_customModel_hXBrhdpmbtpo6dwf3zVGyw/G6-includeTPose.fbx     --target  /home/parsa/Documents/Bahari/Foot_Gestures/AI-Mohyedi/deepmotion/blender-output/series2/g8-parsa-worker/worker.fbx    --scheme  deepmotion2mixamo.json  --output  retarget_script/output_retargeted.fbx
+
+
+
+cd ~/Downloads/blender-4.0.2-linux-x64
+
+CHARACTER="/home/parsa/.../fat.fbx"
+SCHEME="deepmotion2mixamo.json"
+INPUT_DIR="/home/parsa/.../deepmotion_clips/"
+OUTPUT_DIR="/home/parsa/.../retargeted/"
+
+for fbx in "$INPUT_DIR"*.fbx; do
+    filename=$(basename "$fbx" .fbx)
+    ./blender --background --python retarget_script/retarget.py -- \
+        --source  "$fbx" \
+        --target  "$CHARACTER" \
+        --scheme  "$SCHEME" \
+        --output  "$OUTPUT_DIR/${filename}_retargeted.fbx"
+done
+
+
+
+
+./blender --background --python retarget_script/retarget.py -- --source  /home/parsa/Documents/Bahari/Foot_Gestures/AI-Mohyedi/deepmotion/seriese2/parsa/G6_compressed_customModel_hXBrhdpmbtpo6dwf3zVGyw/G6-includeTPose.fbx     --target  /home/parsa/Documents/Bahari/Foot_Gestures/AI-Mohyedi/deepmotion/bulky1.fbx    --scheme  deepmotion2mixamo_fat.json  --output  retarget_script/output_retargeted5.fbx --debug
+
+
+./blender -t 4 -b -P retarget_script/render_angles8.py -- \
+  --file_path  retarget_script/output_retargeted5.fbx \
+  --output_dir retarget_script/output_folder
