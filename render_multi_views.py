@@ -1,3 +1,11 @@
+"""
+Multi-View FBX Animation Renderer
+Blender 4.0.2 | Headless or GUI
+
+Renders 60 unique variations (3 speeds x 5 distances x 4 angles) 
+of an animated FBX file into a dynamically named folder.
+"""
+
 import bpy
 import math
 import mathutils
@@ -6,48 +14,27 @@ import random
 import sys
 import argparse
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────────────────────────────────────
-def parse_args():
-    argv = sys.argv
-    argv = argv[argv.index("--") + 1:] if "--" in argv else []
-    parser = argparse.ArgumentParser(description="Render FBX animation from multiple angles")
-    parser.add_argument("--file_path", required=True, help="Path to input FBX file")
-    parser.add_argument("--output_dir", required=True, help="Path to output directory")
-    return parser.parse_args(argv)
 
-_args = parse_args()
-FBX_FILE_PATH = _args.file_path
-OUTPUT_DIR    = _args.output_dir
-
-RESOLUTION_X  = 1080
-RESOLUTION_Y  = 1080
-FRAME_START   = 1
-FRAME_END     = 220
-BASE_FPS      = 30
+# --- Configuration ---
+RESOLUTION_X = 1080
+RESOLUTION_Y = 1080
+FRAME_START = 1
+FRAME_END = 220
+BASE_FPS = 30
 
 # Camera geometry
-BASE_DISTANCE  = 6.0
-CAMERA_HEIGHT  = 1.3
+BASE_DISTANCE = 6.0
+CAMERA_HEIGHT = 1.3
 LOOK_AT_HEIGHT = 1.0
 
-# ─────────────────────────────────────────────────────────────────────────────
-# RENDER VARIANTS - UPDATED TO MATCH YOUR DRAWING
-# ─────────────────────────────────────────────────────────────────────────────
-SPEEDS           = [1.0]
-DIST_MULTIPLIERS = [1.0]
-
-# Mapping your drawing to Blender's coordinate degrees:
-# F (Front) = 0°
-# Teal 45 (Left) = -45°
-# Blue 45 (Right) = 45°
-# Pink 90 (Right) = 90°
+# 60 Variations Setup: 3 Speeds x 5 Distances x 4 Angles = 60 Unique Renders
+SPEEDS = [0.8, 1.0, 1.2]
+DIST_MULTIPLIERS = [0.6, 0.8, 1.0, 1.2, 1.4]
 ANGLE_OFFSETS = [
-    ("Front",       0),
+    ("Front", 0),
     ("FrontLeft", -45),
-    ("FrontRight",  45),
-    ("Right",       90),
+    ("FrontRight", 45),
+    ("Right", 90),
 ]
 
 TARGET_BONES = [
@@ -56,12 +43,19 @@ TARGET_BONES = [
     "Spine", "Spine1",
 ]
 
-if not os.path.exists(OUTPUT_DIR):
-    os.makedirs(OUTPUT_DIR)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ROBUST FORWARD DETECTION: Symmetry Cross-Product
-# ─────────────────────────────────────────────────────────────────────────────
+def parse_args():
+    """Parse command line arguments."""
+    argv = sys.argv
+    argv = argv[argv.index("--") + 1:] if "--" in argv else []
+    
+    parser = argparse.ArgumentParser(description="Render FBX animation from multiple angles")
+    parser.add_argument("--file_path", required=True, help="Path to input FBX file")
+    parser.add_argument("--output_dir", required=True, help="Base path to output directory")
+    
+    return parser.parse_args(argv)
+
+
 def detect_true_forward(armature):
     """
     Bulletproof forward detection based on left/right body symmetry.
@@ -86,7 +80,7 @@ def detect_true_forward(armature):
             right_positions.append(mat @ b.head)
 
     # 2. Calculate average left and right mass centers
-    if len(left_positions) > 0 and len(right_positions) > 0:
+    if left_positions and right_positions:
         avg_left = sum(left_positions, mathutils.Vector()) / len(left_positions)
         avg_right = sum(right_positions, mathutils.Vector()) / len(right_positions)
 
@@ -105,28 +99,41 @@ def detect_true_forward(armature):
             print(f"[OK] Symmetry Detected! True Front Angle: {math.degrees(forward_angle):.2f}°")
             return forward_angle
 
-    # FALLBACK: If rig has completely generic naming (no Left/Right indicators)
+    # Fallback if the rig has completely generic naming
     print("[WARNING] No L/R symmetry found in bone names. Defaulting to 0°.")
     return 0.0
 
+
 class KinematicAugmentor:
+    """Applies randomized noise modifiers to specific fcurves for variation."""
+    
     def __init__(self, armature_obj, bones_list):
-        self.armature  = armature_obj
+        self.armature = armature_obj
         self.bones_list = bones_list
-        self.modifiers  = []
+        self.modifiers = []
 
     def apply_noise(self, intensity=1.0):
         action = self.armature.animation_data.action
-        if not action: return
+        if not action:
+            return
+            
         for fcurve in action.fcurves:
-            if 'pose.bones' not in fcurve.data_path or 'rotation' not in fcurve.data_path: continue
+            if 'pose.bones' not in fcurve.data_path or 'rotation' not in fcurve.data_path:
+                continue
+                
             bone_name = fcurve.data_path.split('"')[1]
             if bone_name in self.bones_list:
                 mod = fcurve.modifiers.new(type='NOISE')
                 self.modifiers.append((fcurve, mod))
                 mod.phase = random.uniform(0, 100)
                 mod.scale = random.uniform(10, 20)
-                mod.strength = (0.08 * intensity * 0.5) if "Foot" in bone_name else (0.08 * intensity * random.uniform(0.8, 1.2))
+                
+                # Apply less noise to feet to avoid extreme sliding
+                if "Foot" in bone_name:
+                    mod.strength = 0.08 * intensity * 0.5
+                else:
+                    mod.strength = 0.08 * intensity * random.uniform(0.8, 1.2)
+                    
                 mod.blend_type = 'ADD'
 
     def clear_noise(self):
@@ -134,29 +141,31 @@ class KinematicAugmentor:
             fcurve.modifiers.remove(mod)
         self.modifiers = []
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SCENE SETUP
-# ─────────────────────────────────────────────────────────────────────────────
-def setup_scene():
+
+def setup_scene(fbx_file_path):
+    """Initializes the Blender scene, imports the FBX, and sets up lighting/camera."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
     imported = False
-    for kwargs in [
+    import_attempts = [
         dict(automatic_bone_orientation=True, use_anim=True),
         dict(automatic_bone_orientation=True, use_anim=True, use_custom_normals=False),
-    ]:
+    ]
+    
+    for kwargs in import_attempts:
         try:
-            bpy.ops.import_scene.fbx(filepath=FBX_FILE_PATH, **kwargs)
+            bpy.ops.import_scene.fbx(filepath=fbx_file_path, **kwargs)
             imported = True
             break
-        except Exception as e:
+        except Exception:
             pass
             
     if not imported:
-        raise RuntimeError(f"Could not import FBX: {FBX_FILE_PATH}")
+        raise RuntimeError(f"Could not import FBX: {fbx_file_path}")
 
     armature = next((o for o in bpy.data.objects if o.type == 'ARMATURE'), None)
 
+    # Lighting and World setup
     if bpy.context.scene.world:
         bpy.context.scene.world.use_nodes = True
         bpy.context.scene.world.node_tree.nodes["Background"].inputs[1].default_value = 1.5
@@ -168,20 +177,23 @@ def setup_scene():
     bpy.ops.object.light_add(type='AREA', location=(0, 6, 4))
     bpy.context.active_object.data.energy = 1200
 
+    # Camera setup
     cam_data = bpy.data.cameras.new("Camera")
-    cam_obj  = bpy.data.objects.new("Camera", cam_data)
+    cam_obj = bpy.data.objects.new("Camera", cam_data)
     bpy.context.collection.objects.link(cam_obj)
     bpy.context.scene.camera = cam_obj
 
+    # Camera Target setup
     target = bpy.data.objects.new("Target", None)
     bpy.context.collection.objects.link(target)
     target.location = (0, 0, LOOK_AT_HEIGHT)
 
     ttc = cam_obj.constraints.new(type='TRACK_TO')
-    ttc.target     = target
+    ttc.target = target
     ttc.track_axis = 'TRACK_NEGATIVE_Z'
-    ttc.up_axis    = 'UP_Y'
+    ttc.up_axis = 'UP_Y'
 
+    # Render settings
     bpy.context.scene.render.resolution_x = RESOLUTION_X
     bpy.context.scene.render.resolution_y = RESOLUTION_Y
     bpy.context.scene.frame_start = FRAME_START
@@ -193,17 +205,19 @@ def setup_scene():
 
     return cam_obj, armature
 
-# ─────────────────────────────────────────────────────────────────────────────
-# RENDER VARIANTS
-# ─────────────────────────────────────────────────────────────────────────────
-def render_variants(cam_obj, armature):
+
+def render_variants(cam_obj, armature, final_output_dir):
+    """Loops through all speeds, distances, and angles to render the variations."""
     scene = bpy.context.scene
     scene.render.image_settings.file_format = 'FFMPEG'
     scene.render.ffmpeg.format = 'MPEG4'
-    scene.render.ffmpeg.codec  = 'H264'
+    scene.render.ffmpeg.codec = 'H264'
 
     forward_angle = detect_true_forward(armature)
     augmentor = KinematicAugmentor(armature, TARGET_BONES)
+
+    render_count = 1
+    total_renders = len(SPEEDS) * len(DIST_MULTIPLIERS) * len(ANGLE_OFFSETS)
 
     for speed in SPEEDS:
         scene.render.fps = int(BASE_FPS * speed)
@@ -225,18 +239,41 @@ def render_variants(cam_obj, armature):
                 cam_obj.location = cam_pos
 
                 filename = f"speed{speed}_dist{dist_mult}_{angle_name}.mp4"
-                scene.render.filepath = os.path.join(OUTPUT_DIR, filename)
+                scene.render.filepath = os.path.join(final_output_dir, filename)
 
-                print(f"Rendering: speed={speed}x | dist={dist_mult}x | angle={angle_name} -> Offset: {offset_deg}°")
+                print(f"Rendering [{render_count}/{total_renders}]: speed={speed}x | dist={dist_mult}x | angle={angle_name} -> Offset: {offset_deg}°")
+                
                 bpy.context.view_layer.update()
                 bpy.ops.render.render(animation=True)
+                
+                render_count += 1
 
     augmentor.clear_noise()
-    print(f"\n[OK] Pipeline Render Finished -> {OUTPUT_DIR}\n")
+    print(f"\n[OK] Pipeline Render Finished -> {final_output_dir}\n")
+
+
+def main():
+    args = parse_args()
+
+    # Create dynamic output directory based on the source FBX filename
+    fbx_basename = os.path.splitext(os.path.basename(args.file_path))[0]
+    final_output_dir = os.path.join(args.output_dir, fbx_basename)
+    os.makedirs(final_output_dir, exist_ok=True)
+
+    print("\n" + "="*65)
+    print(" Multi-View Render Pipeline")
+    print(f" Source FBX  : {args.file_path}")
+    print(f" Output Dir  : {final_output_dir}")
+    print(f" Variations  : 60 (3 Speeds x 5 Distances x 4 Angles)")
+    print("="*65 + "\n")
+
+    cam_obj, armature = setup_scene(args.file_path)
+    
+    if armature:
+        render_variants(cam_obj, armature, final_output_dir)
+    else:
+        print("[!] No armature found in the FBX file — aborting.")
+
 
 if __name__ == "__main__":
-    cam_obj, armature = setup_scene()
-    if armature:
-        render_variants(cam_obj, armature)
-    else:
-        print("No armature found — aborting.")
+    main()
