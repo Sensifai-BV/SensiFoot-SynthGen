@@ -1,2 +1,4 @@
 input_files/
-
+*.fbx
+*.txt
+*.mp4
