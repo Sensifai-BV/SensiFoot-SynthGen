@@ -1,0 +1,325 @@
+{
+    "rokoko_custom_names": true,
+    "version": 1,
+    "bones": {
+        "custom_bone_hips_jnt": [
+            "mixamorig:hips",
+            "hips_jnt",
+            "mixamorig1:hips"
+        ],
+        "custom_bone_spine_jnt": [
+            "mixamorig:spine",
+            "spine_jnt",
+            "mixamorig1:spine"
+        ],
+        "custom_bone_spine1_jnt": [
+            "mixamorig:spine1",
+            "spine1_jnt",
+            "mixamorig1:spine1"
+        ],
+        "custom_bone_spine2_jnt": [
+            "mixamorig:spine2",
+            "spine2_jnt",
+            "mixamorig1:spine2"
+        ],
+        "custom_bone_neck_jnt": [
+            "mixamorig:neck",
+            "neck_jnt",
+            "mixamorig1:neck"
+        ],
+        "custom_bone_head_jnt": [
+            "mixamorig:head",
+            "head_jnt",
+            "mixamorig1:head"
+        ],
+        "custom_bone_l_shoulder_jnt": [
+            "mixamorig:leftshoulder",
+            "l_shoulder_jnt",
+            "mixamorig1:leftshoulder"
+        ],
+        "custom_bone_l_arm_jnt": [
+            "mixamorig:leftarm",
+            "l_arm_jnt",
+            "mixamorig1:leftarm"
+        ],
+        "custom_bone_l_forearm_jnt": [
+            "mixamorig:leftforearm",
+            "l_forearm_jnt",
+            "mixamorig1:leftforearm"
+        ],
+        "custom_bone_l_hand_jnt": [
+            "mixamorig:lefthand",
+            "l_hand_jnt",
+            "mixamorig1:lefthand"
+        ],
+        "custom_bone_l_handthumb1_jnt": [
+            "mixamorig:lefthandthumb1",
+            "l_handthumb1_jnt",
+            "mixamorig1:lefthandthumb1"
+        ],
+        "custom_bone_l_handthumb2_jnt": [
+            "mixamorig:lefthandthumb2",
+            "l_handthumb2_jnt",
+            "mixamorig1:lefthandthumb2"
+        ],
+        "custom_bone_l_handthumb3_jnt": [
+            "mixamorig:lefthandthumb3",
+            "l_handthumb3_jnt",
+            "mixamorig1:lefthandthumb3"
+        ],
+        "custom_bone_l_handindex1_jnt": [
+            "mixamorig:lefthandindex1",
+            "l_handindex1_jnt",
+            "mixamorig1:lefthandindex1"
+        ],
+        "custom_bone_l_handindex2_jnt": [
+            "mixamorig:lefthandindex2",
+            "l_handindex2_jnt",
+            "mixamorig1:lefthandindex2"
+        ],
+        "custom_bone_l_handindex3_jnt": [
+            "mixamorig:lefthandindex3",
+            "l_handindex3_jnt",
+            "mixamorig1:lefthandindex3"
+        ],
+        "custom_bone_l_handmiddle1_jnt": [
+            "mixamorig:lefthandmiddle1",
+            "l_handmiddle1_jnt",
+            "mixamorig1:lefthandmiddle1"
+        ],
+        "custom_bone_l_handmiddle2_jnt": [
+            "mixamorig:lefthandmiddle2",
+            "l_handmiddle2_jnt",
+            "mixamorig1:lefthandmiddle2"
+        ],
+        "custom_bone_l_handmiddle3_jnt": [
+            "mixamorig:lefthandmiddle3",
+            "l_handmiddle3_jnt",
+            "mixamorig1:lefthandmiddle3"
+        ],
+        "custom_bone_l_handring1_jnt": [
+            "mixamorig:lefthandring1",
+            "l_handring1_jnt",
+            "mixamorig1:lefthandring1"
+        ],
+        "custom_bone_l_handring2_jnt": [
+            "mixamorig:lefthandring2",
+            "l_handring2_jnt",
+            "mixamorig1:lefthandring2"
+        ],
+        "custom_bone_l_handring3_jnt": [
+            "mixamorig:lefthandring3",
+            "l_handring3_jnt",
+            "mixamorig1:lefthandring3"
+        ],
+        "custom_bone_l_handpinky1_jnt": [
+            "mixamorig:lefthandpinky1",
+            "l_handpinky1_jnt",
+            "mixamorig1:lefthandpinky1"
+        ],
+        "custom_bone_l_handpinky2_jnt": [
+            "mixamorig:lefthandpinky2",
+            "l_handpinky2_jnt",
+            "mixamorig1:lefthandpinky2"
+        ],
+        "custom_bone_l_handpinky3_jnt": [
+            "mixamorig:lefthandpinky3",
+            "l_handpinky3_jnt",
+            "mixamorig1:lefthandpinky3"
+        ],
+        "custom_bone_r_shoulder_jnt": [
+            "mixamorig:rightshoulder",
+            "r_shoulder_jnt",
+            "mixamorig1:rightshoulder"
+        ],
+        "custom_bone_r_arm_jnt": [
+            "mixamorig:rightarm",
+            "r_arm_jnt",
+            "mixamorig1:rightarm"
+        ],
+        "custom_bone_r_forearm_jnt": [
+            "mixamorig:rightforearm",
+            "r_forearm_jnt",
+            "mixamorig1:rightforearm"
+        ],
+        "custom_bone_r_hand_jnt": [
+            "mixamorig:righthand",
+            "r_hand_jnt",
+            "mixamorig1:righthand"
+        ],
+        "custom_bone_r_handthumb1_jnt": [
+            "mixamorig:righthandthumb1",
+            "r_handthumb1_jnt",
+            "mixamorig1:righthandthumb1"
+        ],
+        "custom_bone_r_handthumb2_jnt": [
+            "mixamorig:righthandthumb2",
+            "r_handthumb2_jnt",
+            "mixamorig1:righthandthumb2"
+        ],
+        "custom_bone_r_handthumb3_jnt": [
+            "mixamorig:righthandthumb3",
+            "r_handthumb3_jnt",
+            "mixamorig1:righthandthumb3"
+        ],
+        "custom_bone_r_handindex1_jnt": [
+            "mixamorig:righthandindex1",
+            "r_handindex1_jnt",
+            "mixamorig1:righthandindex1"
+        ],
+        "custom_bone_r_handindex2_jnt": [
+            "mixamorig:righthandindex2",
+            "r_handindex2_jnt",
+            "mixamorig1:righthandindex2"
+        ],
+        "custom_bone_r_handindex3_jnt": [
+            "mixamorig:righthandindex3",
+            "r_handindex3_jnt",
+            "mixamorig1:righthandindex3"
+        ],
+        "custom_bone_r_handmiddle1_jnt": [
+            "mixamorig:righthandmiddle1",
+            "r_handmiddle1_jnt",
+            "mixamorig1:righthandmiddle1"
+        ],
+        "custom_bone_r_handmiddle2_jnt": [
+            "mixamorig:righthandmiddle2",
+            "r_handmiddle2_jnt",
+            "mixamorig1:righthandmiddle2"
+        ],
+        "custom_bone_r_handmiddle3_jnt": [
+            "mixamorig:righthandmiddle3",
+            "r_handmiddle3_jnt",
+            "mixamorig1:righthandmiddle3"
+        ],
+        "custom_bone_r_handring1_jnt": [
+            "mixamorig:righthandring1",
+            "r_handring1_jnt",
+            "mixamorig1:righthandring1"
+        ],
+        "custom_bone_r_handring2_jnt": [
+            "mixamorig:righthandring2",
+            "r_handring2_jnt",
+            "mixamorig1:righthandring2"
+        ],
+        "custom_bone_r_handring3_jnt": [
+            "mixamorig:righthandring3",
+            "r_handring3_jnt",
+            "mixamorig1:righthandring3"
+        ],
+        "custom_bone_r_handpinky1_jnt": [
+            "mixamorig:righthandpinky1",
+            "r_handpinky1_jnt",
+            "mixamorig1:righthandpinky1"
+        ],
+        "custom_bone_r_handpinky2_jnt": [
+            "mixamorig:righthandpinky2",
+            "r_handpinky2_jnt",
+            "mixamorig1:righthandpinky2"
+        ],
+        "custom_bone_r_handpinky3_jnt": [
+            "mixamorig:righthandpinky3",
+            "r_handpinky3_jnt",
+            "mixamorig1:righthandpinky3"
+        ],
+        "custom_bone_l_upleg_jnt": [
+            "mixamorig:leftupleg",
+            "l_upleg_jnt",
+            "mixamorig1:leftupleg"
+        ],
+        "custom_bone_l_leg_jnt": [
+            "mixamorig:leftleg",
+            "l_leg_jnt",
+            "mixamorig1:leftleg"
+        ],
+        "custom_bone_l_foot_jnt": [
+            "mixamorig:leftfoot",
+            "l_foot_jnt",
+            "mixamorig1:leftfoot"
+        ],
+        "custom_bone_l_toebase_jnt": [
+            "mixamorig:lefttoebase",
+            "l_toebase_jnt",
+            "mixamorig1:lefttoebase"
+        ],
+        "custom_bone_r_upleg_jnt": [
+            "mixamorig:rightupleg",
+            "r_upleg_jnt",
+            "mixamorig1:rightupleg"
+        ],
+        "custom_bone_r_leg_jnt": [
+            "mixamorig:rightleg",
+            "r_leg_jnt",
+            "mixamorig1:rightleg"
+        ],
+        "custom_bone_r_foot_jnt": [
+            "mixamorig:rightfoot",
+            "r_foot_jnt",
+            "mixamorig1:rightfoot"
+        ],
+        "custom_bone_r_toebase_jnt": [
+            "mixamorig:righttoebase",
+            "r_toebase_jnt",
+            "mixamorig1:righttoebase"
+        ],
+        "custom_bone_mixamorig1:headtop_end": [
+            "mixamorig1:headtop_end",
+            "mixamorig:headtop_end"
+        ],
+        "leftUpperArm": [
+            "mixamorig:leftarm"
+        ],
+        "custom_bone_mixamorig1:lefthandthumb4": [
+            "mixamorig1:lefthandthumb4",
+            "mixamorig:lefthandthumb4"
+        ],
+        "custom_bone_mixamorig1:lefthandindex4": [
+            "mixamorig1:lefthandindex4",
+            "mixamorig:lefthandindex4"
+        ],
+        "custom_bone_mixamorig1:lefthandmiddle4": [
+            "mixamorig1:lefthandmiddle4",
+            "mixamorig:lefthandmiddle4"
+        ],
+        "custom_bone_mixamorig1:lefthandring4": [
+            "mixamorig1:lefthandring4",
+            "mixamorig:lefthandring4"
+        ],
+        "custom_bone_mixamorig1:lefthandpinky4": [
+            "mixamorig1:lefthandpinky4",
+            "mixamorig:lefthandpinky4"
+        ],
+        "rightUpperArm": [
+            "mixamorig:rightarm"
+        ],
+        "custom_bone_mixamorig1:righthandthumb4": [
+            "mixamorig1:righthandthumb4",
+            "mixamorig:righthandthumb4"
+        ],
+        "custom_bone_mixamorig1:righthandindex4": [
+            "mixamorig1:righthandindex4",
+            "mixamorig:righthandindex4"
+        ],
+        "custom_bone_mixamorig1:righthandmiddle4": [
+            "mixamorig1:righthandmiddle4",
+            "mixamorig:righthandmiddle4"
+        ],
+        "custom_bone_mixamorig1:righthandring4": [
+            "mixamorig1:righthandring4",
+            "mixamorig:righthandring4"
+        ],
+        "custom_bone_mixamorig1:righthandpinky4": [
+            "mixamorig1:righthandpinky4",
+            "mixamorig:righthandpinky4"
+        ],
+        "custom_bone_mixamorig1:lefttoe_end": [
+            "mixamorig1:lefttoe_end",
+            "mixamorig:lefttoe_end"
+        ],
+        "custom_bone_mixamorig1:righttoe_end": [
+            "mixamorig1:righttoe_end",
+            "mixamorig:righttoe_end"
+        ]
+    },
+    "shapes": {}
+}
