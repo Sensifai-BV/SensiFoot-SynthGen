@@ -10,13 +10,20 @@ Before running the automated Python scripts, you need to prepare your base asset
 
 * **0.1 - Capture Video:** Record a video of the target foot gesture. The clearer the video, the better the downstream results.
 * **0.2 - Motion Extraction:** Use [DeepMotion](https://www.deepmotion.com/) (or another converter service) to extract markerless motion capture and generate an FBX file from your video. This grounds the dataset in reality and ensures physically authentic temporal dynamics.
-* **0.3 - Target Character:** Download a 3D character model (e.g., from Mixamo) in FBX format.By retargeting onto distinct morphological types (normal, fat, bulky), the pipeline introduces crucial spatial variance.
+* **0.3 - Target Character:** Download a 3D character model (e.g., from Mixamo) in FBX format. By retargeting onto distinct morphological types (normal, fat, bulky), the pipeline introduces crucial spatial variance.
 * **0.4 - Environment Setup:** Create a Conda environment (or venv) utilizing **Python 3.10**. 
     * *Note: MediaPipe version `0.10.21` is strictly required.*
     * Install the dependencies using `pip install -r requirements.txt`.
 * **0.5 - Blender Setup:** Download [Blender 4.0.2](https://download.blender.org/release/Blender4.0/) as a `.zip` file. Extract it to a known directory and ensure the `./blender` executable is accessible. Our scripts will run Blender in headless mode (`--background`).
-
----
+* **0.6 - Rokoko Add-on Setup:** The retargeting script relies on the Rokoko Studio Live add-on. Because Blender is running headlessly, this must be installed manually via the command line so the script can locate the `rokoko-studio-live-blender-master` module. Run the following commands to install it:
+  ```bash
+  mkdir -p ~/.config/blender/4.0/scripts/addons/
+  cd ~/.config/blender/4.0/scripts/addons/
+  wget [https://github.com/Rokoko/rokoko-studio-live-blender/archive/refs/heads/master.zip](https://github.com/Rokoko/rokoko-studio-live-blender/archive/refs/heads/master.zip)
+  unzip master.zip
+  rm master.zip
+  cd -  # Return to your project directory
+  ```
 
 ## Phase 1: Retargeting (`retarget_movement.py`)
 This script maps the motion capture animation from your DeepMotion FBX onto your Mixamo character's skeleton. This ensures the downstream pose-estimation model does not overfit to a specific body type or limb proportion, which is a common failure point in gesture recognition models.
@@ -83,7 +90,7 @@ To prove true generalizability, the trainer defaults to LOSO validation. Instead
     ```bash
     python baseline_trainer.py \
         --data_path /path/to/csvs-final \
-        --val_prefix parsa_ \
+        --val_prefix $_ \
         --epochs 60 \
         --batch_size 64
     ```
