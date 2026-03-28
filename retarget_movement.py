@@ -234,6 +234,8 @@ def export_fbx(target_arm, output_path):
         add_leaf_bones=False,
         axis_forward='-Z',
         axis_up='Y',
+        path_mode='COPY',
+        embed_textures=True,
     )
     print(f"[OK] Exported successfully -> {output_path}")
 
