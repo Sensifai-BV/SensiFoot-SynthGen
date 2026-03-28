@@ -1,0 +1,13 @@
+# Ignore any folder starting with 'output' or 'input'
+output*/
+input*/
+
+# Ignore specific file extensions
+*.fbx
+*.txt
+*.mp4
+*.csv
+
+# Optional: Ignore common python artifacts if you haven't already
+__pycache__/
+*.pyc
