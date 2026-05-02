@@ -1,96 +1,451 @@
 # SensiFoot-SynthGen
 
-This pipeline is an exceptionally well-engineered solution for synthetic data generatio. By combining markerless motion capture, morphological diversity, physical noise injection, and symmetrical augmentation, we have created a robust system that effectively bridges the gap between real-world data collection and purely synthetic generation.
+**SensiFoot-SynthGen** is an end-to-end pipeline for generating synthetic foot‑gesture datasets and training gesture classification models using a sliding‑window learning framework.
 
-This repository provides an automated, end-to-end pipeline to convert a single real-world video of a foot gesture into hundreds of robust, augmented, and normalized skeletal data records, culminating in a powerful CNN-LSTM attention-based classifier.
+The system combines **synthetic data generation**, **pose-based feature extraction**, and **temporal deep learning models** to build robust gesture classifiers with minimal real-world recordings.
 
-## Step 0: Prerequisites & Setup
+The full pipeline converts a **single captured gesture video** into **hundreds of normalized pose sequences**, which are then used for **training, evaluation, ablation studies, and model fine‑tuning**.
 
-Before running the automated Python scripts, you need to prepare your base assets and environment:
+---
 
-* **0.1 - Capture Video:** Record a video of the target foot gesture. The clearer the video, the better the downstream results.
-* **0.2 - Motion Extraction:** Use [DeepMotion](https://www.deepmotion.com/) (or another converter service) to extract markerless motion capture and generate an FBX file from your video. This grounds the dataset in reality and ensures physically authentic temporal dynamics.
-* **0.3 - Target Character:** Download a 3D character model (e.g., from Mixamo) in FBX format. By retargeting onto distinct morphological types (normal, fat, bulky), the pipeline introduces crucial spatial variance.
-* **0.4 - Environment Setup:** Create a Conda environment (or venv) utilizing **Python 3.10**. 
-    * *Note: MediaPipe version `0.10.21` is strictly required.*
-    * Install the dependencies using `pip install -r requirements.txt`.
-* **0.5 - Blender Setup:** Download [Blender 4.0.2](https://download.blender.org/release/Blender4.0/) as a `.zip` file. Extract it to a known directory and ensure the `./blender` executable is accessible. Our scripts will run Blender in headless mode (`--background`).
-* **0.6 - Rokoko Add-on Setup:** The retargeting script relies on the Rokoko Studio Live add-on. Because Blender is running headlessly, this must be installed manually via the command line so the script can locate the `rokoko-studio-live-blender-master` module. Run the following commands to install it:
-  ```bash
-  mkdir -p ~/.config/blender/4.0/scripts/addons/
-  cd ~/.config/blender/4.0/scripts/addons/
-  wget [https://github.com/Rokoko/rokoko-studio-live-blender/archive/refs/heads/master.zip](https://github.com/Rokoko/rokoko-studio-live-blender/archive/refs/heads/master.zip)
-  unzip master.zip
-  rm master.zip
-  cd -  # Return to your project directory
-  ```
+# Pipeline Overview
 
-## Phase 1: Retargeting (`retarget_movement.py`)
-This script maps the motion capture animation from your DeepMotion FBX onto your Mixamo character's skeleton. This ensures the downstream pose-estimation model does not overfit to a specific body type or limb proportion, which is a common failure point in gesture recognition models.
+The workflow consists of two major components:
 
-* **Inputs:** Source (mocap) FBX, Target (character) FBX, and a Rokoko bone-mapping JSON scheme.
-* **Outputs:** A retargeted FBX file named dynamically based on your inputs (e.g., `retarget_output_[source]_[target].fbx`).
-* **How to run:**
-    ```bash
-    /path/to/blender-4.0.2/blender --background --python retarget_movement.py -- \
-        --source /path/to/mocap.fbx \
-        --target /path/to/character.fbx \
-        --scheme /path/to/scheme.json \
-        --output /path/to/save_folder
-    ```
+### 1. Synthetic Data Generation
+This stage creates a large synthetic dataset from a single captured motion.
 
-## Phase 2: Multi-View Rendering (`render_multi_views.py`)
-This phase acts as a multiplier. The script takes your retargeted FBX and renders **120 unique video variations** by looping through 5 speeds, 3 distances, and 8 camera angles. 
+- Motion retargeting to different character skeletons
+- Multi-view rendering
+- Pose landmark extraction using MediaPipe
+- Dataset augmentation via mirroring
 
-Crucially, it utilizes **Kinematic Noise Injection**, which guarantees both infinite uniqueness and physical stability. The foot amplitude is halved to exactly 0.04 radians (max ~2.3°), mathematically preventing the ankles from snapping or clipping through the floor.
+### 2. Sliding-Window Training Pipeline
+This stage trains and evaluates machine learning models using the extracted features.
 
-* **Inputs:** The retargeted FBX file from Phase 1.
-* **Outputs:** A folder containing 120 `.mp4` files.
-* **How to run:**
-    ```bash
-    /path/to/blender-4.0.2/blender --background --python render_multi_views.py -- \
-        --file_path /path/to/retarget_output.fbx \
-        --output_dir /path/to/save_folder
-    ```
+- Temporal windowing of pose sequences
+- Feature engineering
+- Model training and evaluation
+- Architecture ablation studies
+- Fine-tuning of the best model (TCN)
 
-## Phase 3: Feature Extraction (`feature_extractor.py`)
-This script processes the rendered videos through MediaPipe to extract 3D landmarks. It isolates indices 25-32 (legs and feet). 
+---
 
-The normalization logic here is highly sophisticated. By anchoring the coordinates to the Mid-Hip point, the gesture's data becomes independent of where the subject is standing in the camera frame. It also scales using the static Torso Length, ensuring that a gesture performed close to the camera outputs the exact same numerical footprint as one performed far away.
+# End-to-End Data Flow
 
-* **Inputs:** The folder of 120 `.mp4` videos and a designated Class ID.
-* **Outputs:** A new folder containing 120 `.csv` files.
-* **How to run:**
-    ```bash
-    python feature_extractor.py \
-        --input_dir /path/to/video_folder \
-        --output_dir /path/to/save_folder \
-        --class_id 1
-    ```
+Raw gesture video
+    ↓
+Motion capture / FBX generation
+    ↓
+Retargeted character motion
+    ↓
+Multi-view rendered videos
+    ↓
+MediaPipe feature extraction
+    ↓
+Training CSVs / Test CSVs
+    ↓
+Sliding-window training / evaluation
+    ↓
+Best model (TCN) fine-tuning
+    ↓
+Fine‑Tuning
 
-## Phase 4: Symmetrical Mirroring (`mirror_legs.py`)
-Because these gestures are single-leg focused, capturing the opposite leg in the real world would require doubling the physical recording time. This script duplicates the CSVs, swaps the `L_` and `R_` column headers, and mathematically inverts the lateral X-axis. This effectively doubles the dataset to 240 records per character with zero additional rendering cost.
 
-* **Inputs:** The folder containing your extracted `.csv` files.
-* **Outputs:** 120 newly generated `_mirrored.csv` files saved directly alongside the originals.
-* **How to run:**
-    ```bash
-    python mirror_legs.py --input_dir /path/to/csv_folder
-    ```
 
-## Phase 5: Model Training (`baseline_trainer.py`)
-The final step trains a Universal Gesture Model utilizing a Spatial CNN block to smooth coordinates, a Temporal LSTM block for timeline processing, and a Temporal Attention mechanism to focus on the most important chronological frames.
+---
 
-**Leave-One-Subject-Out (LOSO) Validation:**
-To prove true generalizability, the trainer defaults to LOSO validation. Instead of a random data split, the model trains on subjects A and B, and validates *entirely* on subject C. This proves the model learns the actual gesture, not the unique movement quirks or skeleton size of a specific person. As demonstrated in our validation matrix, the baseline model achieves robust class separation even on entirely unseen subject skeletons.
+# System Requirements
 
-* **Inputs:** A root directory containing subfolders of your fully processed CSVs, grouped by class (e.g., `.../csvs-final/1/`, `.../csvs-final/2/`).
-* **Outputs:** The best performing `.pth` model weights.
-* **How to run:**
-    ```bash
-    python baseline_trainer.py \
-        --data_path /path/to/csvs-final \
-        --val_prefix $_ \
-        --epochs 60 \
-        --batch_size 64
-    ```
+## Software
+
+- **Python 3.10**
+- **Blender 4.0.2**
+- **MediaPipe 0.10.21**
+
+Install project dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+# Important Environment Setup (MediaPipe)
+MediaPipe must use the exact version:
+```bash
+mediapipe==0.10.21
+```
+
+This MediaPipe version requires older NumPy versions, which may conflict with modern deep learning dependencies used in the training pipeline.
+
+For this reason, it is strongly recommended to use two separate Python environments.
+
+## Environment A — Synthetic Generation & Feature Extraction
+Use this environment for:
+
+- Blender scripts
+- Rendering
+- MediaPipe pose extraction
+- CSV generation
+
+### Example:
+```bash
+conda create -n sensifoot-gen python=3.10
+conda activate sensifoot-gen
+
+pip install mediapipe==0.10.21
+pip install -r requirements.txt
+```
+
+---
+## Environment B — Model Training
+
+Use this environment for:
+
+- Sliding‑window dataset preparation
+- Model training
+- Evaluation
+- Ablation studies
+- Fine‑tuning
+
+### Example:
+```bash
+conda create -n sensifoot-train python=3.10
+conda activate sensifoot-train
+
+pip install -r requirements_training.txt
+```
+
+---
+
+# Recommended Project Structure
+```text
+project_root/
+│
+├── synthgen/                      # Synthetic data generation and rendering scripts
+├── sliding_window/                # Model training, evaluation, and fine-tuning scripts
+├── input_files/                   # Raw FBX files and configurations
+├── ignored_scripts/               # Deprecated or alternate scripts
+│
+├── rendered_outputs_noiseless/    # Generated synthetic videos
+│   ├── class_01/
+│   └── ...
+│
+├── train_csv/                     # CSV features used for training
+│
+└── test_csv/                      # CSV features used for evaluation/fine-tuning
+
+### Folder Purpose
+
+| **Folder**                     | **Description**                                 |
+|--------------------------------|-------------------------------------------------|
+| `rendered_outputs_noiseless/`  | Generated synthetic videos                      |
+| `train_csv/`                   | CSV features used for training                  |
+| `test_csv/`                    | CSV features used for evaluation/fine-tuning    |
+| `checkpoints/`                 | Saved trained models                            |
+| `logs/`                        | Training logs                                   |
+| `outputs/`                     | Evaluation outputs                              |
+
+---
+
+# Phase 1 — Motion Retargeting
+
+Script:
+
+```bash
+python synthgen/retarget_movement.py
+```
+
+
+This stage transfers motion captured from a source skeleton onto a target character skeleton.
+
+## Purpose
+
+- Prevent overfitting to a single body type  
+- Introduce morphological diversity in the dataset  
+- Prepare the animation for multi-view rendering  
+
+By retargeting the captured motion onto different character models, the pipeline ensures that the final gesture dataset is **not tied to a specific body shape or limb proportion**.
+
+## Inputs
+
+- **Source Motion FBX**  
+  Motion capture animation obtained from a real gesture recording.
+
+- **Target Character FBX**  
+  A rigged 3D character model (e.g., Mixamo character).
+
+- **Bone Mapping Configuration**  
+  Mapping that defines how bones from the source skeleton correspond to the target skeleton.
+
+## Output
+
+The retargeted animation is exported as a new FBX file.
+
+Example output name:
+
+```
+retarget_output_<source>_<target>.fbx
+```
+
+
+## Example Execution
+```bash
+/path/to/blender/blender \
+--background \
+--python retarget_movement.py \
+-- <arguments>
+```
+Blender is executed in headless mode (--background), allowing the retargeting process to run automatically without opening the graphical interface.
+
+# Phase 2 - Multi‑View Rendering
+
+Script:
+```bash
+python synthgen/runner.py
+# (Or individually via synthgen/render_multi_views_noiseless.py)
+```
+
+A single animation is rendered from multiple viewpoints and motion settings.
+
+### Variations Generated
+
+- Camera angles
+- Subject distances
+- Playback speeds
+- Kinematic noise
+
+Each FBX animation produces multiple synthetic videos.
+
+## Output Directory
+```
+rendered_outputs_noiseless/
+```
+
+### Output format
+```
+*.mp4
+```
+
+This stage significantly increases dataset diversity without requiring additional recordings.
+
+---
+# Phase 3 — MediaPipe Feature Extraction
+Script:
+
+```bash
+python synthgen/feature_extractor.py
+```
+
+This step extracts pose landmarks from rendered videos.
+
+## MediaPipe Landmark Selection
+Lower body landmarks are used:
+
+```
+25–32
+```
+
+These correspond to:
+
+- hips
+- knees
+- ankles
+- heels
+- feet
+
+## Normalization Strategy
+Pose coordinates are normalized by:
+
+- anchoring to Mid‑Hip
+- scaling using Torso Length
+
+This makes the gesture representation invariant to:
+
+- camera position
+- subject distance
+- character scale
+
+### Input
+```
+rendered_outputs_noiseless/*.mp4
+```
+### Output
+```
+Pose feature CSV files.
+```
+
+### Example:
+
+```bash
+train_csv/class_01/sample_001.csv
+```
+---
+
+# Phase 4 — Symmetrical Mirroring
+
+Script:
+
+```bash
+python synthgen/mirror_legs.py
+```
+
+Single‑leg gestures are mirrored to create additional training samples.
+
+### Operation
+- swap left/right landmark columns
+- invert lateral X‑axis
+
+### Benefit
+- doubles dataset size
+- no additional rendering required
+
+### Output
+```bash
+*_mirrored.csv
+```
+---
+# Phase 5 — Sliding‑Window Dataset Preparation
+The training pipeline converts raw pose CSVs into temporal windows.
+
+### Core components:
+
+```bash
+### Core components:
+- `sliding_window/sw_dataset.py`
+- `sliding_window/feature_extractors.py`
+```
+
+### Functionality
+- load CSV sequences
+- generate sliding windows
+- apply feature engineering
+- prepare model inputs
+- Input Directories
+
+### Training data:
+
+```
+train_csv/
+```
+
+### Evaluation data:
+
+```
+test_csv/
+```
+---
+
+# Phase 6 — Model Training & Ablation
+
+### Training pipeline modules:
+
+```bash
+### Training pipeline modules:
+- `sliding_window/sw_trainer.py`
+- `sliding_window/models_zoo.py`
+- `sliding_window/sw_evaluator.py`
+- `sliding_window/sw_run_ablation.py`
+```
+
+The framework supports multiple architectures for comparison.
+
+### Example candidates include:
+
+- CNN‑based temporal models
+- LSTM sequence models
+- Temporal Convolutional Networks (TCN)
+
+## Ablation Studies
+
+Experiments evaluate:
+
+- feature configurations
+- window sizes
+- model architectures
+
+Results are summarized in:
+
+```
+ABLATION_SUMMARY.txt
+```
+---
+
+# Best Performing Model
+Based on ablation results, the Temporal Convolutional Network (TCN) performs best.
+
+Therefore, TCN is selected as the primary model for fine‑tuning.
+
+--- 
+
+# Phase 7 — Evaluation & Fine‑Tuning
+Fine‑tuning adapts the selected model using the test dataset.
+
+### Script:
+
+```bash
+python sliding_window/ft_code.py
+```
+
+### Typical Workflow
+1- Train candidate models on
+```
+train_csv/
+```
+
+2- Evaluate on
+```
+test_csv/
+```
+
+3- Select best model (TCN)
+4- Fine‑tune using test data
+
+---
+
+# Typical Execution Flow
+
+```
+source_video.mp4
+↓
+motion_capture.fbx
+↓
+retarget_movement.py
+↓
+retargeted_animation.fbx
+↓
+render_multi_views.py
+↓
+rendered_outputs_noiseless/*.mp4
+↓
+feature_extractor.py
+↓
+train_csv/*.csv
+test_csv/*.csv
+↓
+Sliding Window Training
+↓
+Model Evaluation
+↓
+TCN Fine‑Tuning
+```
+
+---
+
+# Reproducibility Notes
+
+- Always use MediaPipe 0.10.21 for feature extraction.
+- Keep generation and training environments separate.
+- Maintain a clear separation between training CSVs and test CSVs.
+- Ensure rendering outputs match the expected input directory of the feature extraction script.
+
+---
+# Summary
+
+SensiFoot-SynthGen provides a complete workflow for:
+
+- generating synthetic foot gesture datasets
+- extracting pose‑based motion features
+- building temporal gesture classifiers
+- evaluating multiple model architectures
+- fine‑tuning the best model for deployment
+
+## The pipeline enables robust model training with minimal real-world recordings, leveraging synthetic augmentation and pose-based learning.
