@@ -1,6 +1,9 @@
 # Ignore any folder starting with 'output' or 'input'
 output*/
 input*/
+rendered_outputs_noiseless*/
+ignored_scripts*/
+temp*/
 
 # Ignore specific file extensions
 *.fbx
@@ -9,4 +12,4 @@ input*/
 
 # Optional: Ignore common python artifacts if you haven't already
 __pycache__/
-*.pyc
+*.pyc   
