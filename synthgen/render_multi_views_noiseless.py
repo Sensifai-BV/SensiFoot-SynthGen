@@ -1,0 +1,233 @@
+"""
+Multi-View FBX Animation Renderer
+Blender 4.0.2 | Headless or GUI
+
+Renders 60 unique variations (3 speeds x 5 distances x 4 angles) 
+of an animated FBX file into a dynamically named folder.
+"""
+
+import bpy
+import math
+import mathutils
+import os
+import sys
+import argparse
+
+
+# --- Configuration ---
+RESOLUTION_X = 1080
+RESOLUTION_Y = 1080
+FRAME_START = 1
+FRAME_END = 220
+BASE_FPS = 30
+
+# Camera geometry
+BASE_DISTANCE = 6.0
+CAMERA_HEIGHT = 1.3
+LOOK_AT_HEIGHT = 1.0
+
+# 60 Variations Setup: 3 Speeds x 5 Distances x 4 Angles = 60 Unique Renders
+SPEEDS = [0.8, 1.0, 1.2]
+DIST_MULTIPLIERS = [0.6, 0.8, 1.0, 1.2, 1.4]
+ANGLE_OFFSETS = [
+    ("Front", 0),
+    ("FrontLeft", -45),
+    ("FrontRight", 45),
+    ("Right", -90),
+    #("5", 135),
+    # ("6", 180),
+    #("7", 270),
+]
+
+
+def parse_args():
+    """Parse command line arguments."""
+    argv = sys.argv
+    argv = argv[argv.index("--") + 1:] if "--" in argv else []
+    
+    parser = argparse.ArgumentParser(description="Render FBX animation from multiple angles")
+    parser.add_argument("--file_path", required=True, help="Path to input FBX file")
+    parser.add_argument("--output_dir", required=True, help="Base path to output directory")
+    
+    return parser.parse_args(argv)
+
+
+def detect_true_forward(armature):
+    """
+    Bulletproof forward detection based on left/right body symmetry.
+    Ignores arbitrary bone rolls and animation paths entirely.
+    """
+    scene = bpy.context.scene
+    mat = armature.matrix_world
+    bones = armature.pose.bones
+
+    scene.frame_set(scene.frame_start)
+    bpy.context.view_layer.update()
+
+    left_positions = []
+    right_positions = []
+
+    # 1. Parse bones into Left and Right sides based on standard naming conventions
+    for b in bones:
+        name = b.name.lower()
+        if name.startswith("l_") or name.endswith("_l") or name.endswith(".l") or "left" in name:
+            left_positions.append(mat @ b.head)
+        elif name.startswith("r_") or name.endswith("_r") or name.endswith(".r") or "right" in name:
+            right_positions.append(mat @ b.head)
+
+    # 2. Calculate average left and right mass centers
+    if left_positions and right_positions:
+        avg_left = sum(left_positions, mathutils.Vector()) / len(left_positions)
+        avg_right = sum(right_positions, mathutils.Vector()) / len(right_positions)
+
+        # 3. Create a vector pointing from Left to Right
+        right_vec = (avg_right - avg_left)
+        right_vec.z = 0  # Flatten to XY plane to ignore vertical posture imbalances
+        
+        if right_vec.length > 0.001:
+            right_vec.normalize()
+            up_vec = mathutils.Vector((0, 0, 1)) # Global Up (+Z)
+
+            # 4. Cross Product (Up x Right = Forward)
+            forward_vec = up_vec.cross(right_vec).normalized()
+            forward_angle = math.atan2(forward_vec.y, forward_vec.x)
+            
+            print(f"[OK] Symmetry Detected! True Front Angle: {math.degrees(forward_angle):.2f}°")
+            return forward_angle
+
+    # Fallback if the rig has completely generic naming
+    print("[WARNING] No L/R symmetry found in bone names. Defaulting to 0°.")
+    return 0.0
+
+
+def setup_scene(fbx_file_path):
+    """Initializes the Blender scene, imports the FBX, and sets up lighting/camera."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+
+    imported = False
+    import_attempts = [
+        dict(automatic_bone_orientation=True, use_anim=True),
+        dict(automatic_bone_orientation=True, use_anim=True, use_custom_normals=False),
+    ]
+    
+    for kwargs in import_attempts:
+        try:
+            bpy.ops.import_scene.fbx(filepath=fbx_file_path, **kwargs)
+            imported = True
+            break
+        except Exception:
+            pass
+            
+    if not imported:
+        raise RuntimeError(f"Could not import FBX: {fbx_file_path}")
+
+    armature = next((o for o in bpy.data.objects if o.type == 'ARMATURE'), None)
+
+    # Lighting and World setup
+    if bpy.context.scene.world:
+        bpy.context.scene.world.use_nodes = True
+        bpy.context.scene.world.node_tree.nodes["Background"].inputs[1].default_value = 1.5
+
+    bpy.ops.object.light_add(type='AREA', location=(4, -4, 5))
+    bpy.context.active_object.data.energy = 2000
+    bpy.ops.object.light_add(type='AREA', location=(-4, -2, 3))
+    bpy.context.active_object.data.energy = 800
+    bpy.ops.object.light_add(type='AREA', location=(0, 6, 4))
+    bpy.context.active_object.data.energy = 1200
+
+    # Camera setup
+    cam_data = bpy.data.cameras.new("Camera")
+    cam_obj = bpy.data.objects.new("Camera", cam_data)
+    bpy.context.collection.objects.link(cam_obj)
+    bpy.context.scene.camera = cam_obj
+
+    # Camera Target setup
+    target = bpy.data.objects.new("Target", None)
+    bpy.context.collection.objects.link(target)
+    target.location = (0, 0, LOOK_AT_HEIGHT)
+
+    ttc = cam_obj.constraints.new(type='TRACK_TO')
+    ttc.target = target
+    ttc.track_axis = 'TRACK_NEGATIVE_Z'
+    ttc.up_axis = 'UP_Y'
+
+    # Render settings
+    bpy.context.scene.render.resolution_x = RESOLUTION_X
+    bpy.context.scene.render.resolution_y = RESOLUTION_Y
+    bpy.context.scene.frame_start = FRAME_START
+
+    frame_end = FRAME_END
+    if armature and armature.animation_data and armature.animation_data.action:
+        frame_end = int(armature.animation_data.action.frame_range[1])
+    bpy.context.scene.frame_end = frame_end
+
+    return cam_obj, armature
+
+
+def render_variants(cam_obj, armature, final_output_dir):
+    """Loops through all speeds, distances, and angles to render the variations."""
+    scene = bpy.context.scene
+    scene.render.image_settings.file_format = 'FFMPEG'
+    scene.render.ffmpeg.format = 'MPEG4'
+    scene.render.ffmpeg.codec = 'H264'
+
+    forward_angle = detect_true_forward(armature)
+
+    render_count = 1
+    total_renders = len(SPEEDS) * len(DIST_MULTIPLIERS) * len(ANGLE_OFFSETS)
+
+    for speed in SPEEDS:
+        scene.render.fps = int(BASE_FPS * speed)
+
+        for dist_mult in DIST_MULTIPLIERS:
+            current_dist = BASE_DISTANCE * dist_mult
+
+            for angle_name, offset_deg in ANGLE_OFFSETS:
+
+                # Camera placement based on the true symmetry angle
+                cam_angle = forward_angle + math.radians(offset_deg)
+                cam_pos = mathutils.Vector((
+                    current_dist * math.cos(cam_angle),
+                    current_dist * math.sin(cam_angle),
+                    CAMERA_HEIGHT,
+                ))
+                cam_obj.location = cam_pos
+
+                filename = f"speed{speed}_dist{dist_mult}_{angle_name}.mp4"
+                scene.render.filepath = os.path.join(final_output_dir, filename)
+
+                print(f"Rendering [{render_count}/{total_renders}]: speed={speed}x | dist={dist_mult}x | angle={angle_name} -> Offset: {offset_deg}°")
+                
+                bpy.context.view_layer.update()
+                bpy.ops.render.render(animation=True)
+                
+                render_count += 1
+
+    print(f"\n[OK] Pipeline Render Finished -> {final_output_dir}\n")
+
+
+def main():
+    args = parse_args()
+
+    # Create dynamic output directory based on the source FBX filename
+    fbx_basename = os.path.splitext(os.path.basename(args.file_path))[0]
+    final_output_dir = os.path.join(args.output_dir, fbx_basename)
+    os.makedirs(final_output_dir, exist_ok=True)
+
+    print("\n" + "="*65)
+    print(" Multi-View Render Pipeline")
+    print(f" Source FBX  : {args.file_path}")
+    print(f" Output Dir  : {final_output_dir}")
+    print(f" Variations  : 60 (3 Speeds x 5 Distances x 4 Angles)")
+    print("="*65 + "\n")
+
+    cam_obj, armature = setup_scene(args.file_path)
+    
+    if armature:
+        render_variants(cam_obj, armature, final_output_dir)
+    else:
+        print("[!] No armature found in the FBX file — aborting.")
+
+
+if __name__ == "__main__":
+    main()
